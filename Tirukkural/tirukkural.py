@@ -32,7 +32,7 @@ def get_next_count():
         cursor.execute('UPDATE application set value = ? WHERE key = ?',(new_value,1))
         connection.commit()
     except sqlite.Error, e:
-        print ("Error %s:" % e.args[0])
+        logging.error("Error %s:" % e.args[0])
     finally:
         if connection:
             connection.close()
