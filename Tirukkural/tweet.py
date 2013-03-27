@@ -6,6 +6,7 @@ Created on 26-Mar-2013
 from twython import Twython
 import urllib2, os, time
 from ConfigParser import  RawConfigParser, NoSectionError, NoOptionError
+import logging
 
 twitter_en = None
 twitter_ta = None
@@ -16,7 +17,7 @@ tweet_file = '/var/opt/tirukkural/tweet.cfg'
 def init_tweetbot():
     global twitter_en, twitter_ta
     if(not os.path.isfile(tweet_file)):    
-        print 'file not found'
+        logging.info('Twitter configuration file not found')
         return
     try:
         config = RawConfigParser()
@@ -32,7 +33,7 @@ def init_tweetbot():
                           oauth_token_secret = config.get('TweetAuth_ta','oauth_token_secret'))
         
     except NoSectionError, NoOptionError:
-        print('Twitter Initialisation failed')
+        logging.info('Twitter initialisation failed')
 
 def post_tweet_en(text):
     global twitter_en
@@ -67,14 +68,12 @@ def post_tweet(twitter, text):
     while not processed:
         wait_for_internet()
         try:
-            print 'tweeting... '+ text
+            logging.info('Tweeting... '+ text)
             twitter.updateStatus(status=text)
             processed = True
         except Exception, e:
-            print e
+            logging.error(str(e))
             time.sleep(get_wait_time())
-            processed = False
-
 
 def get_wait_time():
     wait_time = (1,2,4,8,16,32,64,128)

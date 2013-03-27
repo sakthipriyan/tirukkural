@@ -6,10 +6,10 @@ Created on 26-Mar-2013
 '''
 import sqlite3 as sqlite
 import logging
-from tirukkural.tweet import init_tweetbot, post_tweet_en, post_tweet_ta
-from tirukkural.daemon import Daemon
+from tweet import init_tweetbot, post_tweet_en, post_tweet_ta
+from daemon import Daemon
 import sys
-
+import time
 
 database = '/var/opt/tirukkural/tirukkural.db'
 log_file = '/var/log/tirukkural/service.log'
@@ -17,13 +17,14 @@ pid = '/var/run/tirukkural.pid'
 
 def get_next_count():
     connection = None
-    data = 1
+    value = 1
     try:
         connection = sqlite.connect(database)
         cursor = connection.cursor()
         cursor.execute('SELECT value FROM application WHERE key = 1')
         data = cursor.fetchone()
         value = int(data[0])
+        logging.info("Tirukkural " + str(value) + " will be tweeted")
         if value == 1330:
             new_value = 1
         else:    
@@ -49,22 +50,22 @@ def get_kurals(kural_id):
         
         cursor.execute('SELECT * FROM kural_en where id = ?',(kural_id,))
         data_en = cursor.fetchone()
-        
+                
         data = (data_ta,data_en)
     except sqlite.Error, e:
-        print("Error %s:" % e.args[0])
+        logging.info("Error %s:" % e.args[0])
     finally:
         if connection:
             connection.close()
     return data
 
 
-def process_next_kural():
+def process_kural():
     count = get_next_count()
     data = get_kurals(count)
     if((int(count))%10 == 1):
-        post_tweet_ta("பால்: %s\nஇயல்: %s\nஅதிகாரம்: %s" % (data[0][1],data[0][2],data[0][3]))    
-        post_tweet_en("Section: %s\nChapterGroup: %s\nChapter: %s" % (data[1][1],data[1][2],data[1][3]))
+        post_tweet_ta(u"பால்: %s\nஇயல்: %s\nஅதிகாரம்: %s" % (data[0][1],data[0][2],data[0][3]))    
+        post_tweet_en(u"Section: %s\nChapterGroup: %s\nChapter: %s" % (data[1][1],data[1][2],data[1][3]))
     post_tweet_ta(u'குறள் ' + str(count) + ':\n' + data[0][4])
     post_tweet_en(u'Couplet ' + str(count) + ':\n' + data[1][4])
     post_tweet_ta(u'விளக்கம்: ' + data[0][5])
@@ -73,13 +74,17 @@ def process_next_kural():
 def service():
     init_logging()
     init_tweetbot()
-    process_next_kural()
+    init_processor()
     
+def init_processor():
+    while True:
+        process_kural()
+        time.sleep(21600)
+
 def init_logging():
     logging.basicConfig(level=logging.INFO, filename=log_file,
-                        format='%(asctime)s [%(threadName)s] %(message)s', datefmt="%Y-%m-%d %H:%M:%S")
+                        format='%(asctime)s %(message)s', datefmt="%Y-%m-%d %H:%M:%S")
     logging.info('-------------### Starting Tirukkural service ###-------------')
-
 
 class TirukkuralDaemon(Daemon):
     def run(self):
@@ -95,6 +100,8 @@ if __name__ == "__main__":
             logging.info('-------------### Stopping Tirukkural service ###-------------')
             daemon.stop()
         elif 'restart' == sys.argv[1]:
+            init_logging()
+            logging.info('-------------### Restarting Tirukkural service ###-------------')
             daemon.restart()
         else:
             print "Unknown command"
