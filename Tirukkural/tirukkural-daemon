@@ -17,11 +17,11 @@ case "$1" in
 		;;
 	stop)
 		echo "Stopping tirukkural service..."
-		python /opt/tirukkural/powerbot.py stop
+		python /opt/tirukkural/tirukkural.py stop
 		;;
 	restart)
 		echo "Restarting tirukkural service..."
-		python /opt/tirukkural/powerbot.py restart
+		python /opt/tirukkural/tirukkural.py restart
 		;;
 	*)
 		echo "Usage: /etc/init.d/tirukkural (start|stop|restart)"
