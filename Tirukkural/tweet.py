@@ -44,14 +44,14 @@ def post_tweet_ta(text):
     post_tweets(twitter_ta, text)
 
 def post_tweets(twitter, text):
-    if(len(text) <= 160):
+    if(len(text) <= 140):
         post_tweet(twitter, text)
     else:
         split_array = text.split(' ')
         output_array = []
         output = ''
         for text in split_array:
-            if len(output + text) < 157:
+            if len(output + text) < 137:
                 output = output + text + ' '
             else:
                 output_array.append(output)
