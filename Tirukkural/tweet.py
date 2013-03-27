@@ -51,11 +51,12 @@ def post_tweets(twitter, text):
         output_array = []
         output = ''
         for text in split_array:
-            if len(output + text) < 137:
-                output = output + text + ' '
-            else:
+            if len(output + text) > 136:
                 output_array.append(output)
                 output = text + ' '
+            else:
+                output = output + text + ' '
+        output_array.append(output)
         size = len(output_array)
         count = 0
         for text in output_array:
