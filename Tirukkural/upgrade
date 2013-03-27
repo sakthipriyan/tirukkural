@@ -1,4 +1,4 @@
 echo "Updating the tirukkural service..."
 
 git pull -u origin master
-cp -r powerbot/* /opt/powerbot/
+cp -r ./* /opt/tirukkural/
