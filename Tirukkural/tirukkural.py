@@ -16,6 +16,9 @@ __log_file = '/var/log/tirukkural/service.log'
 __pid = '/var/run/tirukkural.__pid'
 
 class TirukkuralDaemon(Daemon):
+    def __init__(self):
+        self.twyServiceTa = None
+        self.twyServiceEn = None
 
     def run(self):
         self.twyServiceTa = TwythonService('/var/opt/tirukkural/tweet_ta.cfg', '/var/opt/tirukkural/tweet_ta.db')
@@ -23,7 +26,7 @@ class TirukkuralDaemon(Daemon):
         while True:
             self.process_kural()
             time.sleep(21600)
-    
+
     def get_next_count(self):
         connection = None
         value = 1
