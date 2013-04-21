@@ -15,9 +15,6 @@ __log_file = '/var/log/tirukkural/service.log'
 __pid = '/var/run/tirukkural.pid'
 
 class TirukkuralDaemon(Daemon):
-    def __init__(self):
-        self.twyServiceTa = None
-        self.twyServiceEn = None
 
     def run(self):
         self.database = '/var/opt/tirukkural/tirukkural.db'
@@ -85,7 +82,7 @@ class TirukkuralDaemon(Daemon):
         self.twyServiceEn.new_tweet(u'Explanation: ' + data[1][5])
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG, filename=__log_file,
+    logging.basicConfig(level=logging.INFO, filename=__log_file,
                             format='%(asctime)s %(message)s', datefmt="%Y-%m-%d %H:%M:%S")
     daemon = TirukkuralDaemon(__pid)
     if len(sys.argv) == 2:
