@@ -22,8 +22,8 @@ class Daemon:
         http://www.erlenstar.demon.co.uk/unix/faq_2.html#SEC16
         """
         try:
-            pid = os.fork()
-            if pid > 0:
+            __pid = os.fork()
+            if __pid > 0:
                 # exit first parent
                 sys.exit(0)
         except OSError, e:
@@ -37,8 +37,8 @@ class Daemon:
            
         # do second fork
         try:
-            pid = os.fork()
-            if pid > 0:
+            __pid = os.fork()
+            if __pid > 0:
                 # exit from second parent
                 sys.exit(0)
         except OSError, e:
@@ -57,8 +57,8 @@ class Daemon:
            
         # write pidfile
         atexit.register(self.delpid)
-        pid = str(os.getpid())
-        file(self.pidfile, 'w+').write("%s\n" % pid)
+        __pid = str(os.getpid())
+        file(self.pidfile, 'w+').write("%s\n" % __pid)
            
     def delpid(self):
         os.remove(self.pidfile)
@@ -70,12 +70,12 @@ class Daemon:
         # Check for a pidfile to see if the daemon already runs
         try:
             pf = file(self.pidfile, 'r')
-            pid = int(pf.read().strip())
+            __pid = int(pf.read().strip())
             pf.close()
         except IOError:
-            pid = None
+            __pid = None
                 
-        if pid:
+        if __pid:
             message = "pidfile %s already exist. Daemon already running?\n"
             sys.stderr.write(message % self.pidfile)
             sys.exit(1)
@@ -88,14 +88,14 @@ class Daemon:
         """
         Stop the daemon
         """
-        # Get the pid from the pidfile
+        # Get the __pid from the pidfile
         try:
             pf = file(self.pidfile, 'r')
-            pid = int(pf.read().strip())
+            __pid = int(pf.read().strip())
             pf.close()
         except IOError:
-            pid = None
-        if not pid:
+            __pid = None
+        if not __pid:
             message = "pidfile %s does not exist. Daemon not running?\n"
             sys.stderr.write(message % self.pidfile)
             return  # not an error in a restart
@@ -103,7 +103,7 @@ class Daemon:
             # Try killing the daemon process       
         try:
             while 1:
-                os.kill(pid, SIGTERM)
+                os.kill(__pid, SIGTERM)
                 time.sleep(0.1)
         except OSError, err:
             err = str(err)
