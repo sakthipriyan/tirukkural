@@ -11,24 +11,26 @@ import sys
 import time
 from twython_service.twython_service import TwythonService
 
-__database = '/var/opt/tirukkural/tirukkural.db'
 __log_file = '/var/log/tirukkural/service.log'
-__pid = '/var/run/tirukkural.__pid'
+__pid = '/var/run/tirukkural.pid'
 
 class TirukkuralDaemon(Daemon):
 
     def run(self):
-        self.twyServiceTa = TwythonService('/var/opt/tirukkural/tweet_ta.cfg', '/var/opt/tirukkural/tweet_ta.db')
+        self.database = '/var/opt/tirukkural/tirukkural.db'
+        logging.debug('Running Tirukkural service')
         self.twyServiceEn = TwythonService('/var/opt/tirukkural/tweet_en.cfg', '/var/opt/tirukkural/tweet_en.db')
+        self.twyServiceTa = TwythonService('/var/opt/tirukkural/tweet_ta.cfg', '/var/opt/tirukkural/tweet_ta.db')
+        
         while True:
             self.process_kural()
             time.sleep(21600)
-    
+
     def get_next_count(self):
         connection = None
         value = 1
         try:
-            connection = sqlite.connect(__database)
+            connection = sqlite.connect(self.database)
             cursor = connection.cursor()
             cursor.execute('SELECT value FROM application WHERE key = 1')
             data = cursor.fetchone()
@@ -51,7 +53,7 @@ class TirukkuralDaemon(Daemon):
         connection = None
         data = None
         try:
-            connection = sqlite.connect(__database)
+            connection = sqlite.connect(self.database)
             cursor = connection.cursor()
             
             cursor.execute('SELECT * FROM kural_ta where id = ?',(kural_id,))
@@ -68,7 +70,6 @@ class TirukkuralDaemon(Daemon):
                 connection.close()
         return data
     
-    
     def process_kural(self):
         count = self.get_next_count()
         data = self.get_kurals(count)
@@ -81,7 +82,7 @@ class TirukkuralDaemon(Daemon):
         self.twyServiceEn.new_tweet(u'Explanation: ' + data[1][5])
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, filename=__log_file,
+    logging.basicConfig(level=logging.DEBUG, filename=__log_file,
                             format='%(asctime)s %(message)s', datefmt="%Y-%m-%d %H:%M:%S")
     daemon = TirukkuralDaemon(__pid)
     if len(sys.argv) == 2:
@@ -92,6 +93,7 @@ if __name__ == "__main__":
             logging.info('-------------### Stopping Tirukkural service ###-------------')
             daemon.stop()
         elif 'restart' == sys.argv[1]:
+            logging.info('-------------### Restarting Tirukkural service ###-------------')
             daemon.restart()
         else:
             print "Unknown command"
@@ -100,4 +102,3 @@ if __name__ == "__main__":
     else:
         print "usage: %s start|stop|restart" % sys.argv[0]
         sys.exit(2)
-
