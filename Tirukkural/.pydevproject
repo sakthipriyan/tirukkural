@@ -7,5 +7,6 @@
 <pydev_property name="org.python.pydev.PYTHON_PROJECT_INTERPRETER">Default</pydev_property>
 <pydev_pathproperty name="org.python.pydev.PROJECT_EXTERNAL_SOURCE_PATH">
 <path>/usr/local/lib/python2.7/dist-packages/twython-2.5.4-py2.7.egg</path>
+<path>/usr/local/lib/python2.7/dist-packages/twython_service-0.0.1-py2.7.egg</path>
 </pydev_pathproperty>
 </pydev_project>

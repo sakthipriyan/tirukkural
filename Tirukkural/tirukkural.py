@@ -6,14 +6,17 @@ Created on 26-Mar-2013
 '''
 import sqlite3 as sqlite
 import logging
-from tweet import init_tweetbot, post_tweet_en, post_tweet_ta
 from daemon import Daemon
 import sys
 import time
+from twython_service.twython_service import TwythonService
 
 database = '/var/opt/tirukkural/tirukkural.db'
 log_file = '/var/log/tirukkural/service.log'
 pid = '/var/run/tirukkural.pid'
+
+twyServiceTa = TwythonService('/var/opt/tirukkural/tweet_ta.cfg', '/var/opt/tirukkural/tweet_ta.db')
+twyServiceEn = TwythonService('/var/opt/tirukkural/tweet_en.cfg', '/var/opt/tirukkural/tweet_en.db')
 
 def get_next_count():
     connection = None
@@ -64,16 +67,15 @@ def process_kural():
     count = get_next_count()
     data = get_kurals(count)
     if((int(count))%10 == 1):
-        post_tweet_ta(u"பால்: %s\nஇயல்: %s\nஅதிகாரம்: %s" % (data[0][1],data[0][2],data[0][3]))    
-        post_tweet_en(u"Section: %s\nChapterGroup: %s\nChapter: %s" % (data[1][1],data[1][2],data[1][3]))
-    post_tweet_ta(u'குறள் ' + str(count) + ':\n' + data[0][4])
-    post_tweet_en(u'Couplet ' + str(count) + ':\n' + data[1][4])
-    post_tweet_ta(u'விளக்கம்: ' + data[0][5])
-    post_tweet_en(u'Explanation: ' + data[1][5])
+        twyServiceTa.new_tweet(u"பால்: %s\nஇயல்: %s\nஅதிகாரம்: %s" % (data[0][1],data[0][2],data[0][3]))    
+        twyServiceEn.new_tweet(u"Section: %s\nChapterGroup: %s\nChapter: %s" % (data[1][1],data[1][2],data[1][3]))
+    twyServiceTa.new_tweet(u'குறள் ' + str(count) + ':\n' + data[0][4])
+    twyServiceEn.new_tweet(u'Couplet ' + str(count) + ':\n' + data[1][4])
+    twyServiceTa.new_tweet(u'விளக்கம்: ' + data[0][5])
+    twyServiceEn.new_tweet(u'Explanation: ' + data[1][5])
     
 def service():
     init_logging()
-    init_tweetbot()
     init_processor()
     
 def init_processor():
