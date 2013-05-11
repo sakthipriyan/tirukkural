@@ -24,7 +24,8 @@ class TirukkuralDaemon(Daemon):
         
         while True:
             self.process_kural()
-            time.sleep(21600)
+            #Time taken to tweet 1330 Tirukkural in 365 days.  
+            time.sleep(23711)
 
     def get_next_count(self):
         connection = None
