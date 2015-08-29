@@ -9,7 +9,6 @@ import sys
 import time
 import codecs
 import sqlite3 as sqlite
-from daemon import Daemon
 from twython import Twython
 from ConfigParser import RawConfigParser
 
