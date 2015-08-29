@@ -12,15 +12,10 @@ import sqlite3 as sqlite
 from twython import Twython
 from ConfigParser import RawConfigParser
 
-#__config = '/var/opt/tirukkural/tirukkural.cfg'
-#__database = '/var/opt/tirukkural/tirukkural.db'
-#__log_file = '/var/log/tirukkural/tirukkural.log'
-#__pid = '/var/run/tirukkural.pid'
-
-__db = '/home/crayondata.com/sakthipriyan/workspace/python/tirukkural/tirukkural.db'
-__log = '/home/crayondata.com/sakthipriyan/workspace/python/tirukkural/tirukkural.log'
-__pid = '/home/crayondata.com/sakthipriyan/workspace/python/tirukkural/tirukkural.pid'
-__cfg = '/home/crayondata.com/sakthipriyan/workspace/python/tirukkural/tirukkural.cfg'
+__cfg = '/var/opt/tirukkural/tirukkural.cfg'
+__db = '/var/opt/tirukkural/tirukkural.db'
+__log = '/var/log/tirukkural/tirukkural.log'
+__pid = '/var/run/tirukkural.pid'
 
 class TirukkuralDaemon(object):
     def __init__(self,config,database):
