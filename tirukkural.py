@@ -4,92 +4,140 @@ Created on 26-Mar-2013
 
 @author: sakthipriyan
 '''
-import sqlite3 as sqlite
 import logging
-from daemon import Daemon
 import sys
 import time
-from twython_service.twython_service import TwythonService
+import codecs
+import sqlite3 as sqlite
+from daemon import Daemon
+from twython import Twython
+from ConfigParser import RawConfigParser
 
-__log_file = '/var/log/tirukkural/service.log'
-__pid = '/var/run/tirukkural.pid'
+#__config = '/var/opt/tirukkural/tirukkural.cfg'
+#__database = '/var/opt/tirukkural/tirukkural.db'
+#__log_file = '/var/log/tirukkural/tirukkural.log'
+#__pid = '/var/run/tirukkural.pid'
 
-class TirukkuralDaemon(Daemon):
+__db = '/home/crayondata.com/sakthipriyan/workspace/python/tirukkural/tirukkural.db'
+__log = '/home/crayondata.com/sakthipriyan/workspace/python/tirukkural/tirukkural.log'
+__pid = '/home/crayondata.com/sakthipriyan/workspace/python/tirukkural/tirukkural.pid'
+__cfg = '/home/crayondata.com/sakthipriyan/workspace/python/tirukkural/tirukkural.cfg'
+
+class TirukkuralDaemon(object):
+    def __init__(self,config,database):
+        self.__config = config
+        self.__database = database
 
     def run(self):
-        self.database = '/var/opt/tirukkural/tirukkural.db'
-        logging.debug('Running Tirukkural service')
-        self.twyServiceEn = TwythonService('/var/opt/tirukkural/tweet_en.cfg', '/var/opt/tirukkural/tweet_en.db')
-        self.twyServiceTa = TwythonService('/var/opt/tirukkural/tweet_ta.cfg', '/var/opt/tirukkural/tweet_ta.db')
-        
+        logging.debug('------------###-------------')
+        config = RawConfigParser()
+        config.readfp(codecs.open(self.__config, "r", "utf8"))
         while True:
-            self.process_kural()
-            #Time taken to tweet 1330 Tirukkural in 365 days.  
+            self.process_kurals(config)
+            # Time taken to tweet 1330 Tirukkural in 365 days.
             time.sleep(23711)
 
-    def get_next_count(self):
-        connection = None
-        value = 1
-        try:
-            connection = sqlite.connect(self.database)
-            cursor = connection.cursor()
-            cursor.execute('SELECT value FROM application WHERE key = 1')
-            data = cursor.fetchone()
-            value = int(data[0])
-            logging.info("Tirukkural " + str(value) + " will be tweeted")
-            if value == 1330:
-                new_value = 1
-            else:    
-                new_value = str(int(data[0]) + 1)
-            cursor.execute('UPDATE application set value = ? WHERE key = ?',(new_value,1))
-            connection.commit()
-        except sqlite.Error, e:
-            logging.error("Error %s:" % e.args[0])
-        finally:
-            if connection:
-                connection.close()
-        return value
-    
-    def get_kurals(self,kural_id):
+    def process_kurals(self, config):
+        kural_id = self.get_next_count()
+        languages = config.sections()
+        for language in languages:
+            kural = self.process_kural(language, kural_id, config)
+
+    def process_kural(self,language, kural_id, config):
+        twitter_token = config.get(language,'twitter_token')
+        twitter_secret = config.get(language,'twitter_secret')
+        oauth_token = config.get(language,'oauth_token')
+        oauth_token_secret = config.get(language,'oauth_token_secret')
+        label_couplet = config.get(language,'label_couplet')
+        label_explanation = config.get(language,'label_explanation')
+        label_section = config.get(language,'label_section')
+        label_chapter_group = config.get(language,'label_chapter_group')
+        label_chapter = config.get(language,'label_chapter')
+
+        data = self.get_kural(language, kural_id)
+        twitter = Twython(twitter_token, twitter_secret, oauth_token, oauth_token_secret)
+        if((int(kural_id))%10 == 1):
+            messages = [u"%s: %s\n%s: %s\n%s: %s" % (label_section,data[1],label_chapter_group,data[2],label_chapter,data[3])]
+            self.post_to_twitter(twitter, messages)
+        kural = u'%s %s:\n%s' % (label_couplet, kural_id, data[4])
+        porul = u'%s:\n%s' % (label_explanation, data[5])
+        messages = [kural,porul]
+        self.post_to_twitter(twitter, messages)
+
+    def post_to_twitter(self, twitter, messages):
+        tweets = self.get_tweets(messages)
+        last_id = None
+        for tweet in tweets:
+            response = twitter.update_status(status = tweet, in_reply_to_status_id = last_id)
+            last_id = response['id']
+
+    def get_tweets(self,messages):
+        tweets = []
+        for message in messages:
+            if(len(message) > 140):
+                count = 0
+                words = message.split(' ')
+                tweet = u''
+                for word in words:
+                    if len(tweet + word) < 135:
+                        tweet = tweet + word + ' '
+                    else:
+                        count = count + 1
+                        tweets.append(tweet + str(count))
+                        tweet = word + ' '
+                if tweet != '':
+                    count = count + 1
+                    tweets.append(tweet + str(count))
+            else:
+                tweets.append(message)
+        return tweets
+
+    def get_kural(self, language, kural_id):
         connection = None
         data = None
         try:
-            connection = sqlite.connect(self.database)
+            connection = sqlite.connect(self.__database)
             cursor = connection.cursor()
-            
-            cursor.execute('SELECT * FROM kural_ta where id = ?',(kural_id,))
-            data_ta = cursor.fetchone()
-            
-            cursor.execute('SELECT * FROM kural_en where id = ?',(kural_id,))
-            data_en = cursor.fetchone()
-                    
-            data = (data_ta,data_en)
+            cursor.execute('SELECT * FROM kural_'+language+' where id = ?',(kural_id,))
+            data = cursor.fetchone()
         except sqlite.Error, e:
             logging.info("Error %s:" % e.args[0])
         finally:
             if connection:
                 connection.close()
         return data
-    
-    def process_kural(self):
-        count = self.get_next_count()
-        data = self.get_kurals(count)
-        if((int(count))%10 == 1):
-            self.twyServiceTa.new_tweet(u"பால்: %s\nஇயல்: %s\nஅதிகாரம்: %s" % (data[0][1],data[0][2],data[0][3]))    
-            self.twyServiceEn.new_tweet(u"Section: %s\nChapterGroup: %s\nChapter: %s" % (data[1][1],data[1][2],data[1][3]))
-        self.twyServiceTa.new_tweet(u'குறள் ' + str(count) + ':\n' + data[0][4])
-        self.twyServiceEn.new_tweet(u'Couplet ' + str(count) + ':\n' + data[1][4])
-        self.twyServiceTa.new_tweet(u'விளக்கம்: ' + data[0][5])
-        self.twyServiceEn.new_tweet(u'Explanation: ' + data[1][5])
+
+    def get_next_count(self):
+        connection = None
+        kural_id = 1
+        try:
+            connection = sqlite.connect(self.__database)
+            cursor = connection.cursor()
+            cursor.execute('SELECT value FROM application WHERE key = 1')
+            data = cursor.fetchone()
+            kural_id = int(data[0])
+            if kural_id == 1330:
+                next_kural = 1
+            else:
+                next_kural = str(kural_id + 1)
+            cursor.execute('UPDATE application set value = ? WHERE key = ?',(next_kural,1))
+            connection.commit()
+        except sqlite.Error, e:
+            logging.error("Error %s:" % e.args[0])
+        finally:
+            if connection:
+                connection.close()
+            logging.info("Tirukkural " + str(kural_id) + " will be tweeted")
+        return kural_id
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, filename=__log_file,
+    logging.basicConfig(level=logging.INFO, filename=__log,
                             format='%(asctime)s %(message)s', datefmt="%Y-%m-%d %H:%M:%S")
-    daemon = TirukkuralDaemon(__pid)
+    daemon = TirukkuralDaemon(__cfg, __db)
     if len(sys.argv) == 2:
         if 'start' == sys.argv[1]:
             logging.info('-------------### Starting Tirukkural service ###-------------')
-            daemon.start()
+            daemon.run()
         elif 'stop' == sys.argv[1]:
             logging.info('-------------### Stopping Tirukkural service ###-------------')
             daemon.stop()
