@@ -4,10 +4,7 @@ Created on 26-Mar-2013
 
 @author: sakthipriyan
 '''
-import logging
-import sys
-import time
-import codecs
+import logging, sys, codecs
 import sqlite3 as sqlite
 from twython import Twython
 from ConfigParser import RawConfigParser
@@ -23,13 +20,9 @@ class TirukkuralDaemon(object):
         self.__database = database
 
     def run(self):
-        logging.debug('------------###-------------')
         config = RawConfigParser()
         config.readfp(codecs.open(self.__config, "r", "utf8"))
-        while True:
-            self.process_kurals(config)
-            # Time taken to tweet 1330 Tirukkural in 365 days.
-            time.sleep(23711)
+        self.process_kurals(config)
 
     def process_kurals(self, config):
         kural_id = self.get_next_count()
@@ -77,11 +70,10 @@ class TirukkuralDaemon(object):
                         tweet = tweet + word + ' '
                     else:
                         count = count + 1
-                        tweets.append(tweet + str(count))
+                        tweets.append(tweet + str(count) + '/?')
                         tweet = word + ' '
-                if tweet != '':
-                    count = count + 1
-                    tweets.append(tweet + str(count))
+                count = count + 1
+                tweets.append(tweet + str(count) + '/' + str(count))
             else:
                 tweets.append(message)
         return tweets
@@ -127,21 +119,7 @@ class TirukkuralDaemon(object):
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, filename=__log,
                             format='%(asctime)s %(message)s', datefmt="%Y-%m-%d %H:%M:%S")
+    logging.info('### Started')
     daemon = TirukkuralDaemon(__cfg, __db)
-    if len(sys.argv) == 2:
-        if 'start' == sys.argv[1]:
-            logging.info('-------------### Starting Tirukkural service ###-------------')
-            daemon.run()
-        elif 'stop' == sys.argv[1]:
-            logging.info('-------------### Stopping Tirukkural service ###-------------')
-            daemon.stop()
-        elif 'restart' == sys.argv[1]:
-            logging.info('-------------### Restarting Tirukkural service ###-------------')
-            daemon.restart()
-        else:
-            print "Unknown command"
-            sys.exit(2)
-        sys.exit(0)
-    else:
-        print "usage: %s start|stop|restart" % sys.argv[0]
-        sys.exit(2)
+    daemon.run()
+    logging.info('### Completed')
